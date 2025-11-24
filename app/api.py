@@ -31,6 +31,7 @@ app = FastAPI()
 class Post(BaseModel):
     title: str
     content: str
+    published: bool = True
 
 
 while True:
@@ -72,11 +73,17 @@ def get_posts():
 @app.post("/posts", status_code=status.HTTP_201_CREATED)
 def create_posts(post: Post):
 
-    return {"data": post_dict}
+    cursor.execute(""" INSERT INTO posts (title, content, published) VALUES (%s, %s, %s) RETURNING *""", (post.title, post.content, post.published))
+    new_post = cursor.fetchone()
+    conn.commit()
+
+    return {"data": new_post}
 
 @app.get("/posts/{id}")
 def get_post(id: int, response: Response):
-    post = find_post(id)
+    cursor.execute("""SELECT * FROM posts WHERE id=%s""", (str(id),))
+    post = cursor.fetchone()
+
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with {id} was not found")
         # response.status_code= status.HTTP_404_NOT_FOUND
@@ -86,26 +93,28 @@ def get_post(id: int, response: Response):
 
 @app.delete("/posts/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_post(id: int):
-    value = None
+    cursor.execute("""DELETE FROM posts WHERE id = %s RETURNING *""", (str(id),))
+    deleted_post = cursor.fetchone()
+    conn.commit()
 
-    for i in range(0, len(my_posts)):
-        if my_posts[i]['id'] == id:
-            value = my_posts.pop(i)
-            break
+    # for i in range(0, len(my_posts)):
+    #     if my_posts[i]['id'] == id:
+    #         value = my_posts.pop(i)
+    #         break
     
-    if value is None:
+    if deleted_post is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Post with id: {id} not found to delete")
     
-    return {"post_details" : value}
+    return {"post_details" : deleted_post}
 
 @app.put("/posts/{id}")
 def update_post(id: int, post: Post):
-    index = find_post(id)
-    if index is None:
+    cursor.execute("""UPDATE posts SET title = %s, content=%s, published=%s WHERE id = %s RETURNING *""",
+     (post.title, post.content, post.published, str(id)))
+    updated_post = cursor.fetchone()
+    conn.commit()
+
+    if updated_post is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
-    post_dict = post.dict()
-    post_dict['id'] = id
-    my_posts.append(post_dict)
-
-    return {'message' : 'updated post'}
+    return {'data' : updated_post}

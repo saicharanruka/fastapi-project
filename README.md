@@ -1,6 +1,6 @@
 ## Fast API Project
 
 ### Run
-```python
+```shell
 uvicorn app.api:app --reload
 ```
