@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-from fastapi import FastAPI, Response, status, HTTPException
+from fastapi import FastAPI, Response, status, HTTPException, Depends
 from fastapi.params import Body
 from pydantic import BaseModel
 from typing import Optional
@@ -12,6 +12,12 @@ import time
 
 import psycopg
 from psycopg.rows import dict_row
+
+from sqlalchemy.orm import Session
+from . import models
+from .database import engine, get_db
+
+models.Base.metadata.create_all(bind=engine)
 
 
 # Loading environment variables ----
@@ -27,6 +33,10 @@ DB_NAME = os.getenv("POSTGRES_DB")
 # ---------------
 
 app = FastAPI()
+
+
+
+
 
 class Post(BaseModel):
     title: str
@@ -118,3 +128,10 @@ def update_post(id: int, post: Post):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
     return {'data' : updated_post}
+
+
+@app.get("/sqlalchemy")
+def test_posts(db: Session = Depends(get_db)):
+    
+    posts = db.query(models.Post).all()
+    return {"data" : posts}
