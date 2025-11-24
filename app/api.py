@@ -1,16 +1,50 @@
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+
 from fastapi import FastAPI, Response, status, HTTPException
 from fastapi.params import Body
 from pydantic import BaseModel
 from typing import Optional
 
 from random import randrange
+import time
 
+import psycopg
+from psycopg.rows import dict_row
+
+
+# Loading environment variables ----
+ROOT_DIR = Path(__file__).parent.parent
+ENV_PATH = ROOT_DIR / ".env"
+load_dotenv(dotenv_path=ENV_PATH)
+
+
+DB_USER = os.getenv("POSTGRES_USER")
+DB_PASSWORD = os.getenv("POSTGRES_PASSWORD")
+DB_HOST = os.getenv("POSTGRES_HOST")
+DB_NAME = os.getenv("POSTGRES_DB")
+# ---------------
 
 app = FastAPI()
 
 class Post(BaseModel):
     title: str
     content: str
+
+
+while True:
+    try:
+        conn = psycopg.connect(host=DB_HOST, dbname=DB_NAME, user=DB_USER, password=DB_PASSWORD, row_factory=dict_row)
+
+        cursor = conn.cursor()
+        print("DB connection was successful!")
+        break
+    except Exception as error:
+        print(error)
+        time.sleep(2)
+
+
 
 my_posts = [
     {"id" : 1, "title" : "title 1", "content" : "content for post 1"},
@@ -30,15 +64,13 @@ async def root():
 
 @app.get("/posts")
 def get_posts():
-    return {"data" : my_posts}
+    cursor.execute("""SELECT * FROM posts""")
+    posts = cursor.fetchall()
+    return {"data" : posts}
 
 
 @app.post("/posts", status_code=status.HTTP_201_CREATED)
 def create_posts(post: Post):
-    post_dict = post.dict()
-    post_dict['id'] = randrange(0,1000)
-
-    my_posts.append(post_dict)
 
     return {"data": post_dict}
 
