@@ -13,9 +13,9 @@ import psycopg
 from psycopg.rows import dict_row
 
 from sqlalchemy.orm import Session
-from . import models
+from . import models, utils
 from .database import engine, get_db
-from .schemas import Post, UserCreate, UserCreateResponse
+from .schemas import Post, UserCreate, UserResponse
 
 
 
@@ -164,11 +164,25 @@ def test_posts(db: Session = Depends(get_db)):
 
 
 # USERS ------------------
-@app.post("/users", status_code=status.HTTP_201_CREATED, response_model=UserCreateResponse)
+@app.post("/users", status_code=status.HTTP_201_CREATED, response_model=UserResponse)
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
+    # Hash password
+    hashed_password = utils.get_hashed_password(user.password)
+    user.password = hashed_password
+
     new_user = models.User(**user.dict())
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
 
     return  new_user
+
+
+@app.get("/users/{id}", response_model=UserResponse)
+def get_user(id: int, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.id == id).first()
+
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User with id: {id} not found")
+    
+    return user
