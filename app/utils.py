@@ -6,3 +6,7 @@ def get_hashed_password(password: str):
     print(f"Type being hashed: {type(password)}")
     print(f"Length being hashed: {len(password)}")
     return pwd_context.hash(password)
+
+
+def verify(plain_password:str, hashed_password:str):
+    return pwd_context.verify(plain_password, hashed_password)
