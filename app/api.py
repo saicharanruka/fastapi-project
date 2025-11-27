@@ -77,8 +77,8 @@ async def root():
 
 
 
-@app.get("/sqlalchemy")
-def test_posts(db: Session = Depends(get_db)):
+# @app.get("/sqlalchemy")
+# def test_posts(db: Session = Depends(get_db)):
     
-    posts = db.query(models.Post).all()
-    return {"data" : posts}
+#     posts = db.query(models.Post).all()
+#     return {"data" : posts}
