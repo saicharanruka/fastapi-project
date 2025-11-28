@@ -2,14 +2,13 @@ from pydantic import BaseModel, EmailStr
 from datetime import datetime
 
 from typing import Optional
+from pydantic.types import conint
 
 
 class Post(BaseModel):
     title: str
     content: str
     published: bool = True
-
-
 
 class UserCreate(BaseModel):
     email: EmailStr
@@ -45,6 +44,14 @@ class PostResponse(Post):
     owner_id: int
     owner: UserResponse
     
-    # This configuration is crucial for SQLAlchemy models
     class Config:
         from_attributes = True
+
+class PostOut(BaseModel):
+    Post: PostResponse
+    votes: int
+
+
+class Vote(BaseModel):
+    post_id: int
+    dir: conint(le=1, ge=0)

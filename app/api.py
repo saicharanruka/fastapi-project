@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 from . import models, utils
 from .database import engine, get_db
 from .schemas import Post, UserCreate, UserResponse
-from .routers import post, user, auth
+from .routers import post, user, auth, vote
 
 
 
@@ -41,6 +41,7 @@ app = FastAPI()
 app.include_router(post.router)
 app.include_router(user.router)
 app.include_router(auth.router)
+app.include_router(vote.router)
 
 
 

@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Response, status, HTTPException, Depends, APIRouter
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from .. import models, schemas, oauth2
 from ..database import get_db
@@ -11,22 +12,34 @@ router = APIRouter(
     tags=["Posts"]
 )
 
-@router.get("/", response_model=List[schemas.PostResponse])
+@router.get("/", response_model=List[schemas.PostOut])
+# @router.get("/")
 def get_posts(db: Session = Depends(get_db), limit: int = 10, skip:int = 0, search: Optional[str] = ""):
     # cursor.execute("""SELECT * FROM posts""")
     # posts = cursor.fetchall()
-    print("Limit: ", limit)
-    posts = db.query(models.Post).filter(models.Post.title.contains(search)).limit(limit).offset(skip).all()
-    return posts
+    # print("Limit: ", limit)
+
+    # posts = db.query(models.Post).filter(models.Post.title.contains(search)).limit(limit).offset(skip).all()
+
+    results = db.query(models.Post, func.count(models.Vote.post_id).label('votes'))\
+        .join(models.Vote, models.Post.id == models.Vote.post_id, isouter=True)\
+        .group_by(models.Post.id).filter(models.Post.title.contains(search))\
+        .limit(limit).offset(skip).all()
+
+    return results
 
 
-@router.get("/{id}")
+@router.get("/{id}", response_model=schemas.PostOut)
 def get_post(id: int, response: Response, db: Session = Depends(get_db), response_model=List[schemas.PostResponse]):
     # cursor.execute("""SELECT * FROM posts WHERE id=%s""", (str(id),))
     # post = cursor.fetchone()
 
     
-    post = db.query(models.Post).filter(models.Post.id == id).first()
+    # post = db.query(models.Post).filter(models.Post.id == id).first()
+
+    post = db.query(models.Post, func.count(models.Vote.post_id).label('votes'))\
+        .join(models.Vote, models.Post.id == models.Vote.post_id, isouter=True)\
+        .group_by(models.Post.id).filter(models.Post.id == id).first()
 
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with {id} was not found")
