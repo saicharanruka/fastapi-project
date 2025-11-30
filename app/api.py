@@ -85,7 +85,7 @@ app.include_router(vote.router)
 # Order of path operation matters as the first one with the path gets returned
 @app.get("/")
 async def root():
-    return {"message": "Welcome to my API on Docker"}
+    return {"message": "Welcome to my API"}
 
 
 
