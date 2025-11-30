@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 
 from fastapi import FastAPI, Response, status, HTTPException, Depends
 from fastapi.params import Body
+from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
 
 from random import randrange
@@ -36,6 +37,16 @@ from .routers import post, user, auth, vote
 # # ---------------
 
 app = FastAPI()
+
+origins = ["*"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 app.include_router(post.router)
@@ -74,7 +85,7 @@ app.include_router(vote.router)
 # Order of path operation matters as the first one with the path gets returned
 @app.get("/")
 async def root():
-    return {"message": "Welcome to my API new"}
+    return {"message": "Welcome to my API on Docker"}
 
 
 
